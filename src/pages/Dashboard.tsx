@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { TrendingUp, TrendingDown, Droplet, BarChart, Activity, Download, Filter, Calendar } from 'lucide-react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line } from 'recharts';
+import PipelineHealthMonitor from '../components/PipelineHealthMonitor';
 
 const Dashboard = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('monthly');
@@ -136,6 +136,11 @@ const Dashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+        
+        {/* Pipeline Health Monitor */}
+        <div className="glass-panel p-6">
+          <PipelineHealthMonitor />
         </div>
         
         {/* Timeframe selector */}
