@@ -1,14 +1,99 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
-  const toggleView = () => setIsLogin(!isLogin);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const toggleView = () => {
+    setIsLogin(!isLogin);
+    setError('');
+  };
+  
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call for authentication
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demonstration purposes, we'll use a mock authentication
+      if (email === 'admin@example.com' && password === 'password') {
+        // Create a mock JWT token
+        const mockToken = btoa(JSON.stringify({
+          id: '12345',
+          email,
+          exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiration
+        }));
+        
+        // Store token in localStorage
+        localStorage.setItem('authToken', mockToken);
+        localStorage.setItem('user', JSON.stringify({ email, name: 'Admin User' }));
+        
+        toast({
+          title: "Login successful",
+          description: "Redirecting to dashboard...",
+        });
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
+      } else {
+        setError('Invalid email or password');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call for registration
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Account created",
+        description: "Your account has been created successfully. Please log in.",
+      });
+      
+      setIsLogin(true);
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('An error occurred during registration');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center px-4 sm:px-6 lg:px-8 grid-bg">
@@ -34,7 +119,14 @@ const Login = () => {
         </div>
         
         <div className="glass-panel p-8 rounded-lg">
-          <form>
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500/50 rounded-md flex items-center text-red-300">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+          
+          <form onSubmit={isLogin ? handleLogin : handleRegister}>
             <div className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
@@ -49,6 +141,8 @@ const Login = () => {
                     name="email"
                     type="email"
                     required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-600 rounded-md bg-dark-accent text-white focus:outline-none focus:ring-2 focus:ring-neon-blue focus:border-transparent"
                     placeholder="Enter your email"
                   />
@@ -68,6 +162,8 @@ const Login = () => {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="block w-full pl-10 pr-10 py-3 border border-gray-600 rounded-md bg-dark-accent text-white focus:outline-none focus:ring-2 focus:ring-neon-blue focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -99,6 +195,8 @@ const Login = () => {
                       name="confirmPassword"
                       type={showPassword ? "text" : "password"}
                       required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-600 rounded-md bg-dark-accent text-white focus:outline-none focus:ring-2 focus:ring-neon-blue focus:border-transparent"
                       placeholder="Confirm your password"
                     />
@@ -129,12 +227,23 @@ const Login = () => {
               )}
 
               <div>
-                <Link 
-                  to="/dashboard" 
+                <button 
+                  type="submit"
+                  disabled={isLoading}
                   className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-dark bg-neon-blue hover:bg-neon-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue focus:ring-offset-dark transition-all duration-200 hover:shadow-[0_0_15px_theme(colors.neon.blue)]"
                 >
-                  {isLogin ? 'Sign in' : 'Create account'}
-                </Link>
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    isLogin ? 'Sign in' : 'Create account'
+                  )}
+                </button>
               </div>
             </div>
           </form>
