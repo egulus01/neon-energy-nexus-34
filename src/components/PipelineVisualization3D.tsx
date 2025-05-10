@@ -12,15 +12,15 @@ interface PipelineVisualizationProps {
 }
 
 // Pipeline section component that changes color based on metrics
-const PipelineSection = ({ position, rotation, scale, metrics }: { 
+const PipelineSection = ({ position, rotation, scale, metrics, thresholds }: { 
   position: [number, number, number], 
   rotation?: [number, number, number], 
   scale: [number, number, number],
-  metrics: { pressure: number; temperature: number; flowRate: number }
+  metrics: { pressure: number; temperature: number; flowRate: number },
+  thresholds: { pressure: number; temperature: number; flowRate: number }
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHover] = useState(false);
-  const { thresholds } = useAuth();
   
   // Pulse effect for critical state
   const [pulseIntensity, setPulseIntensity] = useState(0);
@@ -217,8 +217,6 @@ const PipelineLabel = ({ position, label }: { position: [number, number, number]
         color="white"
         anchorX="center"
         anchorY="middle"
-        backgroundColor="rgba(0,0,0,0.5)"
-        padding={0.15}
       >
         {label}
       </Text>
@@ -253,6 +251,7 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             rotation={[0, 0, Math.PI/2]} 
             scale={[1, 4, 1]} 
             metrics={{ pressure, temperature, flowRate }}
+            thresholds={thresholds}
           />
           <PipelineLabel position={[-6, 1, 0]} label="Section A" />
           
@@ -261,6 +260,7 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             rotation={[0, 0, Math.PI/2]} 
             scale={[1, 8, 1]} 
             metrics={{ pressure, temperature, flowRate }}
+            thresholds={thresholds}
           />
           <PipelineLabel position={[0, 1, 0]} label="Section B" />
           
@@ -269,6 +269,7 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             rotation={[0, 0, Math.PI/2]} 
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
+            thresholds={thresholds}
           />
           <PipelineLabel position={[7, 1, 0]} label="Section C" />
           
@@ -277,6 +278,7 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             position={[-8, -3, 0]} 
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
+            thresholds={thresholds}
           />
           <PipelineLabel position={[-9, -3, 0]} label="Section D" />
           
@@ -284,6 +286,7 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             position={[10, -3, 0]} 
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
+            thresholds={thresholds}
           />
           <PipelineLabel position={[11, -3, 0]} label="Section E" />
           
