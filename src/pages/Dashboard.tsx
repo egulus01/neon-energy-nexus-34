@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { TrendingUp, TrendingDown, Droplet, BarChart, Activity, Download, Filter, Calendar } from 'lucide-react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line } from 'recharts';
 import PipelineHealthMonitor from '../components/PipelineHealthMonitor';
+import PipelineVisualization3D from '../components/PipelineVisualization3D';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('monthly');
+  // Real-time simulated data
+  const [pressure, setPressure] = useState(120);
+  const [temperature, setTemperature] = useState(65);
+  const [flowRate, setFlowRate] = useState(250);
+  const [alertActive, setAlertActive] = useState(false);
 
-  // Sample data for charts
-  const productionData = [
+  // Sample data for charts - this will be dynamically updated
+  const [productionData, setProductionData] = useState([
     { name: 'Jan', value: 4000 },
     { name: 'Feb', value: 3000 },
     { name: 'Mar', value: 5000 },
@@ -17,9 +25,9 @@ const Dashboard = () => {
     { name: 'Jun', value: 5500 },
     { name: 'Jul', value: 7000 },
     { name: 'Aug', value: 8000 }
-  ];
+  ]);
 
-  const efficiencyData = [
+  const [efficiencyData, setEfficiencyData] = useState([
     { name: 'Jan', efficiency: 85 },
     { name: 'Feb', efficiency: 83 },
     { name: 'Mar', efficiency: 86 },
@@ -28,16 +36,78 @@ const Dashboard = () => {
     { name: 'Jun', efficiency: 92 },
     { name: 'Jul', efficiency: 91 },
     { name: 'Aug', efficiency: 94 }
-  ];
+  ]);
 
-  const reservesData = [
+  const [reservesData, setReservesData] = useState([
     { name: 'A1', value: 800 },
     { name: 'B2', value: 1200 },
     { name: 'C3', value: 1400 },
     { name: 'D4', value: 900 },
     { name: 'E5', value: 1600 },
     { name: 'F6', value: 1100 }
-  ];
+  ]);
+
+  // Simulate real-time data changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Generate new random values with some variance
+      const newPressure = Math.max(50, Math.min(250, pressure + (Math.random() - 0.5) * 30));
+      const newTemperature = Math.max(45, Math.min(95, temperature + (Math.random() - 0.5) * 10));
+      const newFlowRate = Math.max(150, Math.min(350, flowRate + (Math.random() - 0.5) * 40));
+      
+      // Update state
+      setPressure(newPressure);
+      setTemperature(newTemperature);
+      setFlowRate(newFlowRate);
+      
+      // Check if we need to show alerts
+      const criticalCondition = newPressure > 200 || newTemperature > 80;
+      
+      if (criticalCondition && !alertActive) {
+        toast({
+          title: "Alert: Critical System Values",
+          description: `${newPressure > 200 ? "Pressure exceeding safe levels. " : ""}${newTemperature > 80 ? "Temperature too high." : ""}`,
+          variant: "destructive"
+        });
+        setAlertActive(true);
+      } else if (!criticalCondition && alertActive) {
+        setAlertActive(false);
+      }
+      
+      // Update chart data - add new point and remove oldest
+      const timestamp = new Date().toLocaleTimeString();
+      
+      setProductionData(prev => {
+        const newData = [...prev];
+        if (newData.length > 20) newData.shift();
+        newData.push({ name: timestamp, value: Math.round(newFlowRate * 15) });
+        return newData;
+      });
+      
+      setEfficiencyData(prev => {
+        const newData = [...prev];
+        if (newData.length > 20) newData.shift();
+        // Efficiency drops when pressure or temp is high
+        const efficiency = Math.max(70, 100 - (newPressure / 10) - (newTemperature / 5));
+        newData.push({ name: timestamp, efficiency: Math.round(efficiency) });
+        return newData;
+      });
+      
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [pressure, temperature, flowRate, alertActive]);
+
+  // Generate color based on value thresholds
+  const getMetricColor = (value: number, type: 'pressure' | 'temperature' | 'flow') => {
+    if (type === 'pressure') {
+      return value > 200 ? 'text-red-500' : value > 180 ? 'text-neon-orange' : 'text-neon-green';
+    } else if (type === 'temperature') {
+      return value > 80 ? 'text-red-500' : value > 70 ? 'text-neon-orange' : 'text-neon-green';
+    } else {
+      return value > 300 ? 'text-red-500' : value > 280 ? 'text-neon-orange' : 'text-neon-green';
+    }
+  };
 
   return (
     <MainLayout>
@@ -59,6 +129,96 @@ const Dashboard = () => {
               <Download className="h-4 w-4" />
               <span>Export</span>
             </button>
+          </div>
+        </div>
+        
+        {/* Real-time Metrics */}
+        <div className="glass-panel p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-medium text-white">Real-time Metrics</h2>
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <div className="h-2 w-2 rounded-full bg-neon-green animate-pulse"></div>
+              <span>Live Data</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="col-span-1 lg:col-span-3">
+              <PipelineVisualization3D 
+                pressure={pressure} 
+                temperature={temperature} 
+                flowRate={flowRate} 
+              />
+            </div>
+            
+            <div className="space-y-6">
+              <div className="bg-dark-accent p-4 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-gray-300">Pressure</p>
+                  <p className={`text-lg font-medium ${getMetricColor(pressure, 'pressure')}`}>
+                    {Math.round(pressure)} <span className="text-xs text-gray-500">PSI</span>
+                  </p>
+                </div>
+                <div className="h-2 bg-dark rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${
+                      pressure > 200 ? 'bg-red-500' : 
+                      pressure > 180 ? 'bg-neon-orange' : 'bg-neon-green'
+                    }`}
+                    style={{ width: `${(pressure / 250) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="bg-dark-accent p-4 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-gray-300">Temperature</p>
+                  <p className={`text-lg font-medium ${getMetricColor(temperature, 'temperature')}`}>
+                    {Math.round(temperature)} <span className="text-xs text-gray-500">°C</span>
+                  </p>
+                </div>
+                <div className="h-2 bg-dark rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${
+                      temperature > 80 ? 'bg-red-500' : 
+                      temperature > 70 ? 'bg-neon-orange' : 'bg-neon-green'
+                    }`}
+                    style={{ width: `${(temperature / 100) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="bg-dark-accent p-4 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-gray-300">Flow Rate</p>
+                  <p className={`text-lg font-medium ${getMetricColor(flowRate, 'flow')}`}>
+                    {Math.round(flowRate)} <span className="text-xs text-gray-500">L/min</span>
+                  </p>
+                </div>
+                <div className="h-2 bg-dark rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${
+                      flowRate > 300 ? 'bg-red-500' : 
+                      flowRate > 280 ? 'bg-neon-orange' : 'bg-neon-green'
+                    }`}
+                    style={{ width: `${(flowRate / 350) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              {(pressure > 200 || temperature > 80) && (
+                <div className="bg-red-900/30 border border-red-500/30 p-4 rounded-md animate-pulse">
+                  <p className="text-red-500 text-sm font-medium flex items-center">
+                    <Activity className="h-4 w-4 mr-2" />
+                    Critical condition detected
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {pressure > 200 && "Pressure exceeding safety threshold. "}
+                    {temperature > 80 && "Temperature too high."}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
