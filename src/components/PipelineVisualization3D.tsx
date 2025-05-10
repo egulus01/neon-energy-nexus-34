@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PipelineVisualizationProps {
   pressure: number;
@@ -19,15 +20,24 @@ const PipelineSection = ({ position, rotation, scale, metrics }: {
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHover] = useState(false);
+  const { thresholds } = useAuth();
   
-  // Determine color based on metrics
+  // Pulse effect for critical state
+  const [pulseIntensity, setPulseIntensity] = useState(0);
+  const [pulseDirection, setPulseDirection] = useState(1);
+  const [isCritical, setIsCritical] = useState(false);
+  
+  // Determine color based on metrics and configured thresholds
   const getColor = () => {
-    if (metrics.pressure > 200 || metrics.temperature > 80) {
-      return '#FF4500'; // Red for critical
-    } else if (metrics.pressure > 150 || metrics.temperature > 70) {
-      return '#FFA500'; // Orange/yellow for warning
+    if (metrics.pressure > thresholds.pressure || metrics.temperature > thresholds.temperature) {
+      setIsCritical(true);
+      return new THREE.Color('#FF4500'); // Red for critical
+    } else if (metrics.pressure > thresholds.pressure * 0.75 || metrics.temperature > thresholds.temperature * 0.875) {
+      setIsCritical(false);
+      return new THREE.Color('#FFA500'); // Orange/yellow for warning
     } else {
-      return '#39FF14'; // Green for normal
+      setIsCritical(false);
+      return new THREE.Color('#39FF14'); // Green for normal
     }
   };
   
@@ -39,6 +49,30 @@ const PipelineSection = ({ position, rotation, scale, metrics }: {
       // Update material color based on metrics
       const material = meshRef.current.material as THREE.MeshStandardMaterial;
       material.color.set(getColor());
+      
+      // Add pulsing effect for critical state
+      if (isCritical) {
+        setPulseIntensity(prev => {
+          const newIntensity = prev + (0.05 * pulseDirection);
+          if (newIntensity > 1) {
+            setPulseDirection(-1);
+            return 1;
+          } else if (newIntensity < 0) {
+            setPulseDirection(1);
+            return 0;
+          }
+          return newIntensity;
+        });
+        
+        material.emissiveIntensity = 0.3 + (pulseIntensity * 0.7);
+        material.emissive = new THREE.Color('#FF4500');
+      } else if (hovered) {
+        material.emissiveIntensity = 0.5;
+        material.emissive = material.color.clone().multiplyScalar(0.5);
+      } else {
+        material.emissiveIntensity = 0.2;
+        material.emissive = material.color.clone().multiplyScalar(0.2);
+      }
     }
   });
 
@@ -53,11 +87,11 @@ const PipelineSection = ({ position, rotation, scale, metrics }: {
     >
       <cylinderGeometry args={[1, 1, 1, 32]} />
       <meshStandardMaterial 
-        color={new THREE.Color(getColor())}
+        color={getColor()}
         metalness={0.8}
         roughness={0.2}
-        emissive={hovered ? new THREE.Color(getColor()).multiplyScalar(0.5) : undefined}
-        emissiveIntensity={hovered ? 1 : 0}
+        emissive={getColor().clone().multiplyScalar(0.2)}
+        emissiveIntensity={0.2}
       />
     </mesh>
   );
@@ -129,6 +163,16 @@ const PipelineSensor = ({ position, label, value, critical }: {
   value: number,
   critical: boolean
 }) => {
+  const [pulseFactor, setPulseFactor] = useState(0);
+  
+  useFrame(() => {
+    if (critical) {
+      setPulseFactor((prev) => (prev + 0.05) % (2 * Math.PI));
+    } else {
+      setPulseFactor(0);
+    }
+  });
+
   return (
     <group position={position}>
       <mesh>
@@ -138,7 +182,7 @@ const PipelineSensor = ({ position, label, value, critical }: {
           metalness={0.5}
           roughness={0.5}
           emissive={new THREE.Color(critical ? "#FF4500" : "#00FFFF")}
-          emissiveIntensity={0.5}
+          emissiveIntensity={critical ? 0.5 + 0.5 * Math.sin(pulseFactor) : 0.5}
         />
       </mesh>
       <Text 
@@ -163,12 +207,33 @@ const PipelineSensor = ({ position, label, value, critical }: {
   );
 };
 
+// Pipeline segment label component
+const PipelineLabel = ({ position, label }: { position: [number, number, number], label: string }) => {
+  return (
+    <group position={position}>
+      <Text 
+        position={[0, 0, 0]} 
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        backgroundColor="rgba(0,0,0,0.5)"
+        padding={0.15}
+      >
+        {label}
+      </Text>
+    </group>
+  );
+};
+
 // Main pipeline visualization component
 const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressure, temperature, flowRate }) => {
+  const { thresholds } = useAuth();
+  
   // Define if metrics are in critical state
-  const isPressureCritical = pressure > 200;
-  const isTemperatureCritical = temperature > 80;
-  const isFlowCritical = flowRate > 300;
+  const isPressureCritical = pressure > thresholds.pressure;
+  const isTemperatureCritical = temperature > thresholds.temperature;
+  const isFlowCritical = flowRate > thresholds.flowRate;
 
   return (
     <div className="relative h-96 w-full overflow-hidden rounded-md bg-dark-accent">
@@ -189,18 +254,23 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             scale={[1, 4, 1]} 
             metrics={{ pressure, temperature, flowRate }}
           />
+          <PipelineLabel position={[-6, 1, 0]} label="Section A" />
+          
           <PipelineSection 
             position={[0, 0, 0]} 
             rotation={[0, 0, Math.PI/2]} 
             scale={[1, 8, 1]} 
             metrics={{ pressure, temperature, flowRate }}
           />
+          <PipelineLabel position={[0, 1, 0]} label="Section B" />
+          
           <PipelineSection 
             position={[7, 0, 0]} 
             rotation={[0, 0, Math.PI/2]} 
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
           />
+          <PipelineLabel position={[7, 1, 0]} label="Section C" />
           
           {/* Vertical pipeline sections */}
           <PipelineSection 
@@ -208,11 +278,14 @@ const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressur
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
           />
+          <PipelineLabel position={[-9, -3, 0]} label="Section D" />
+          
           <PipelineSection 
             position={[10, -3, 0]} 
             scale={[1, 6, 1]} 
             metrics={{ pressure, temperature, flowRate }}
           />
+          <PipelineLabel position={[11, -3, 0]} label="Section E" />
           
           {/* Joints */}
           <PipelineJoint position={[-8, 0, 0]} />

@@ -1,245 +1,213 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Info, Activity, Lock } from 'lucide-react';
+import { Activity, Shield, Satellite, Users } from 'lucide-react';
 
-// Mock data for system notices
-const mockNotices = [
-  {
-    id: 1,
-    title: 'Scheduled Maintenance',
-    message: 'Pipeline section A7 will undergo scheduled maintenance on May 15th. Expected downtime: 3 hours.',
-    date: '2025-05-09T08:00:00Z',
-    severity: 'info'
-  },
-  {
-    id: 2,
-    title: 'Security Update',
-    message: 'All systems have been updated with the latest security patches.',
-    date: '2025-05-07T14:30:00Z', 
-    severity: 'success'
-  },
-  {
-    id: 3,
-    title: 'Pressure Warning',
-    message: 'Minor pressure fluctuations detected in sector B-12. Engineering team has been notified.',
-    date: '2025-05-08T19:45:00Z',
-    severity: 'warning'
-  }
-];
+const PublicDashboard = () => {
+  const [statusColor, setStatusColor] = useState<'green' | 'orange' | 'red'>('green');
+  const [statusText, setStatusText] = useState('Operational');
+  const [animateIn, setAnimateIn] = useState(false);
 
-// Mock data for pipeline status
-const mockPipelineStatus = [
-  { id: 1, name: 'North Region Main Line', status: 'working', lastUpdated: '2025-05-09T09:15:00Z' },
-  { id: 2, name: 'East Distribution Network', status: 'working', lastUpdated: '2025-05-09T09:10:00Z' },
-  { id: 3, name: 'South Connector', status: 'maintenance', lastUpdated: '2025-05-08T23:45:00Z' },
-  { id: 4, name: 'West Refinery Feed', status: 'disabled', lastUpdated: '2025-05-07T18:30:00Z' },
-  { id: 5, name: 'Central Junction', status: 'working', lastUpdated: '2025-05-09T09:05:00Z' }
-];
-
-const PublicDashboard: React.FC = () => {
-  const [notices, setNotices] = useState(mockNotices);
-  const [pipelineStatus, setPipelineStatus] = useState(mockPipelineStatus);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Update current time every minute
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    
-    return () => clearInterval(timer);
+    // Set initial animation after a short delay
+    const timer = setTimeout(() => {
+      setAnimateIn(true);
+    }, 300);
+
+    // Simulate status changes for demonstration
+    const statusChanger = setInterval(() => {
+      const random = Math.random();
+      if (random < 0.8) {
+        setStatusColor('green');
+        setStatusText('Operational');
+      } else if (random < 0.95) {
+        setStatusColor('orange');
+        setStatusText('Under Maintenance');
+      } else {
+        setStatusColor('red');
+        setStatusText('Offline');
+      }
+    }, 15000); // Change every 15 seconds
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(statusChanger);
+    };
   }, []);
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  
-  // Calculate time difference
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const diff = currentTime.getTime() - date.getTime();
-    
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    return `${minutes}m ago`;
-  };
-  
-  // Get status indicator color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'working':
-        return 'bg-neon-green';
-      case 'maintenance':
-        return 'bg-neon-orange';
-      case 'disabled':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+
+  // Mission pillars data
+  const missionPillars = [
+    {
+      icon: <Shield className="h-12 w-12 text-neon-blue" />,
+      title: "Reliability through Automation",
+      description: "Our advanced autonomous systems ensure 99.99% uptime through continuous monitoring and predictive maintenance.",
+      animation: "fade-in delay-100"
+    },
+    {
+      icon: <Activity className="h-12 w-12 text-neon-green" />,
+      title: "Real-time Predictive Intelligence",
+      description: "AI-powered analytics detect potential issues before they occur, enabling proactive intervention and optimal performance.",
+      animation: "fade-in delay-300"
+    },
+    {
+      icon: <Satellite className="h-12 w-12 text-neon-purple" />,
+      title: "Community Safety via Alerting",
+      description: "Instant notification systems protect surrounding communities with immediate alerts and emergency response coordination.",
+      animation: "fade-in delay-500"
+    },
+    {
+      icon: <Users className="h-12 w-12 text-neon-orange" />,
+      title: "Remote Accessibility with 5G and IoT",
+      description: "Cutting-edge connectivity allows authorized personnel to monitor and control systems from anywhere in the world.",
+      animation: "fade-in delay-700"
     }
-  };
-  
-  // Get notice severity indicator
-  const getNoticeSeverity = (severity: string) => {
-    switch (severity) {
-      case 'info':
-        return { icon: <Info className="h-5 w-5 text-neon-blue" />, bgColor: 'bg-neon-blue/20' };
-      case 'success':
-        return { icon: <Activity className="h-5 w-5 text-neon-green" />, bgColor: 'bg-neon-green/20' };
-      case 'warning':
-        return { icon: <AlertCircle className="h-5 w-5 text-neon-orange" />, bgColor: 'bg-neon-orange/20' };
-      case 'error':
-        return { icon: <AlertCircle className="h-5 w-5 text-red-500" />, bgColor: 'bg-red-500/20' };
-      default:
-        return { icon: <Info className="h-5 w-5 text-gray-400" />, bgColor: 'bg-gray-500/20' };
-    }
-  };
-  
+  ];
+
   return (
-    <div className="min-h-screen bg-dark">
-      {/* Gradient background */}
-      <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-5 -z-10"></div>
-      <div className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full bg-neon-blue/5 blur-[100px] -z-10"></div>
-      <div className="absolute bottom-1/3 right-1/4 w-96 h-96 rounded-full bg-neon-purple/5 blur-[100px] -z-10"></div>
-      
+    <div className="min-h-screen bg-dark flex flex-col">
       {/* Header */}
-      <header className="border-b border-dark-accent">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-neon-blue to-neon-purple"></div>
-              <span className="text-lg font-display font-bold tracking-wider text-white">
-                69-BH12-NER <span className="text-neon-blue">PUBLIC</span>
-              </span>
-            </div>
-            
-            <Link 
-              to="/login"
-              className="flex items-center space-x-2 px-4 py-2 rounded-md bg-secondary text-white hover:bg-secondary/80 transition-colors"
-            >
-              <Lock className="h-4 w-4" />
-              <span>Login</span>
-            </Link>
+      <header className="py-6 border-b border-dark-accent">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center px-4">
+          <div className="flex items-center mb-4 md:mb-0">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-neon-blue to-neon-purple"></div>
+            <h1 className="ml-3 text-2xl font-display font-bold text-white">
+              69-BH12-NER <span className="text-neon-blue">Pipeline</span>
+            </h1>
           </div>
+          
+          <nav>
+            <ul className="flex space-x-8">
+              <li><a href="#" className="text-white hover:text-neon-blue transition-colors">About</a></li>
+              <li><a href="#" className="text-white hover:text-neon-blue transition-colors">Services</a></li>
+              <li><a href="#" className="text-white hover:text-neon-blue transition-colors">Contact</a></li>
+              <li>
+                <Link 
+                  to="/login" 
+                  className="px-4 py-2 bg-neon-blue text-dark rounded-md hover:bg-neon-blue/90 transition-all hover:shadow-[0_0_10px_theme(colors.neon.blue)]"
+                >
+                  Login
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </header>
-      
-      {/* Main content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-white">
-            System <span className="text-neon-blue">Status</span>
-          </h1>
-          <p className="mt-2 text-gray-400">
-            Real-time status of pipeline operations and system notices
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* System Notices Panel */}
-          <div className="lg:col-span-2">
-            <div className="glass-panel p-6 rounded-lg">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-medium text-white">System Notices</h2>
-                <span className="text-xs text-gray-400">
-                  Last updated: {currentTime.toLocaleString()}
+
+      <main className="flex-1">
+        {/* Hero section */}
+        <section className="py-16 md:py-24 relative overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-neon-blue/5 blur-[100px] -z-10"></div>
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full bg-neon-purple/5 blur-[80px] -z-10"></div>
+          
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
+                Next Generation Pipeline Management System
+              </h2>
+              <p className="text-xl text-gray-400 mb-10">
+                Secure, efficient, and intelligent control for critical infrastructure
+              </p>
+              
+              {/* Pipeline Status Badge */}
+              <div 
+                className={`inline-flex items-center px-6 py-3 rounded-full border ${
+                  statusColor === 'green' ? 'border-green-500 bg-green-900/20' : 
+                  statusColor === 'orange' ? 'border-orange-500 bg-orange-900/20' : 
+                  'border-red-500 bg-red-900/20'
+                } mb-12`}
+              >
+                <div 
+                  className={`h-3 w-3 rounded-full ${
+                    statusColor === 'green' ? 'bg-green-500' : 
+                    statusColor === 'orange' ? 'bg-orange-500' : 
+                    'bg-red-500'
+                  } mr-2 animate-pulse`}
+                ></div>
+                <span 
+                  className={`font-medium ${
+                    statusColor === 'green' ? 'text-green-400' : 
+                    statusColor === 'orange' ? 'text-orange-400' : 
+                    'text-red-400'
+                  }`}
+                >
+                  Pipeline Status: {statusText}
                 </span>
               </div>
               
-              <div className="space-y-4">
-                {notices.map(notice => {
-                  const { icon, bgColor } = getNoticeSeverity(notice.severity);
-                  
-                  return (
-                    <div key={notice.id} className="p-4 bg-dark-accent rounded-lg">
-                      <div className="flex items-start">
-                        <div className={`p-2 rounded-md mr-4 ${bgColor}`}>
-                          {icon}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-medium text-white">{notice.title}</h3>
-                            <span className="text-xs text-gray-400">{formatDate(notice.date)}</span>
-                          </div>
-                          <p className="mt-1 text-sm text-gray-300">{notice.message}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="flex flex-wrap justify-center gap-4">
+                <a 
+                  href="#mission" 
+                  className="px-6 py-3 bg-neon-blue text-dark rounded-md hover:bg-neon-blue/90 transition-all hover:shadow-[0_0_10px_theme(colors.neon.blue)]"
+                >
+                  Learn More
+                </a>
+                <a 
+                  href="#" 
+                  className="px-6 py-3 border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/10 transition-colors"
+                >
+                  Contact Support
+                </a>
               </div>
             </div>
           </div>
-          
-          {/* Pipeline Status */}
-          <div>
-            <div className="glass-panel p-6 rounded-lg">
-              <h2 className="text-xl font-medium text-white mb-6">Pipeline Status</h2>
-              
-              <div className="space-y-4">
-                {pipelineStatus.map(pipeline => (
-                  <div key={pipeline.id} className="flex items-center justify-between p-3 bg-dark-accent rounded-md">
-                    <div className="flex items-center space-x-3">
-                      <div className={`h-3 w-3 rounded-full ${getStatusColor(pipeline.status)}`}></div>
-                      <span className="text-sm text-white">{pipeline.name}</span>
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {getTimeAgo(pipeline.lastUpdated)}
-                    </div>
+        </section>
+        
+        {/* Mission pillars section */}
+        <section id="mission" className="py-16 md:py-24 bg-dark-lighter">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-display font-bold text-center text-white mb-12">
+              Our Core <span className="text-neon-blue">Mission</span> Pillars
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {missionPillars.map((pillar, index) => (
+                <div 
+                  key={index}
+                  className={`glass-panel p-8 rounded-lg border-t-2 border-t-neon-blue/30 ${animateIn ? pillar.animation : 'opacity-0'}`}
+                >
+                  <div className="bg-dark-accent p-4 rounded-full inline-block mb-6">
+                    {pillar.icon}
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-8 pt-6 border-t border-dark-accent">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-400">Status Legend</h3>
+                  <h3 className="text-xl font-bold text-white mb-4">{pillar.title}</h3>
+                  <p className="text-gray-400">{pillar.description}</p>
                 </div>
-                
-                <div className="mt-4 grid grid-cols-1 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-3 w-3 rounded-full bg-neon-green"></div>
-                    <span className="text-xs text-gray-300">Working</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className="h-3 w-3 rounded-full bg-neon-orange"></div>
-                    <span className="text-xs text-gray-300">Under Maintenance</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                    <span className="text-xs text-gray-300">Disabled</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
+        
+        {/* Call to action */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl font-display font-bold text-white mb-6">
+                Ready to Experience Advanced Pipeline Management?
+              </h2>
+              <p className="text-xl text-gray-400 mb-10">
+                Join our network of trusted partners and elevate your infrastructure security.
+              </p>
+              <Link 
+                to="/login" 
+                className="px-8 py-4 bg-neon-blue text-dark text-lg rounded-md hover:bg-neon-blue/90 transition-all hover:shadow-[0_0_15px_theme(colors.neon.blue)]"
+              >
+                Access Dashboard
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
       
       {/* Footer */}
-      <footer className="border-t border-dark-accent py-6">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="py-10 border-t border-dark-accent">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-400">
-              © 2025 69-BH12-NER Pipeline Systems. All rights reserved.
+            <p className="text-gray-400 mb-4 md:mb-0">
+              © 2025 69-BH12-NER Pipeline System. All rights reserved.
             </p>
-            <div className="mt-4 md:mt-0">
-              <Link to="/login" className="text-neon-blue hover:text-neon-blue/80 text-sm">
-                Employee Portal
-              </Link>
+            <div className="flex space-x-6">
+              <a href="#" className="text-gray-400 hover:text-neon-blue">Privacy Policy</a>
+              <a href="#" className="text-gray-400 hover:text-neon-blue">Terms of Service</a>
+              <a href="#" className="text-gray-400 hover:text-neon-blue">Contact</a>
             </div>
           </div>
         </div>

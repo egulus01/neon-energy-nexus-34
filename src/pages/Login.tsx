@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,9 +12,11 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   
   const toggleView = () => {
     setIsLogin(!isLogin);
@@ -41,24 +43,38 @@ const Login = () => {
           exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiration
         }));
         
-        // Store token in localStorage
-        localStorage.setItem('authToken', mockToken);
-        localStorage.setItem('user', JSON.stringify({ email, name: 'Admin User' }));
-        
-        toast({
-          title: "Login successful",
-          description: "Redirecting to dashboard...",
-        });
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
+        setIsLoading(false);
+        setIsRedirecting(true);
+
+        // Store token in localStorage via the AuthContext
+        try {
+          await login(mockToken, { email, name: 'Admin User' });
+          
+          // Set a timeout to redirect after a short delay to allow the JWT to be stored
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 100);
+          
+          // Set a fallback timeout in case the first redirect fails
+          const redirectTimeout = setTimeout(() => {
+            // If we're still on the login page after 2 seconds, try again
+            navigate('/dashboard');
+          }, 2000);
+          
+          // Clear the timeout when component unmounts
+          return () => clearTimeout(redirectTimeout);
+        } catch (authError) {
+          console.error('Authentication failed:', authError);
+          setError('Authentication failed. Please try again.');
+          setIsRedirecting(false);
+        }
       } else {
         setError('Invalid email or password');
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('Login error:', err);
       setError('An error occurred during login');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -229,7 +245,7 @@ const Login = () => {
               <div>
                 <button 
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || isRedirecting}
                   className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-dark bg-neon-blue hover:bg-neon-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue focus:ring-offset-dark transition-all duration-200 hover:shadow-[0_0_15px_theme(colors.neon.blue)]"
                 >
                   {isLoading ? (
@@ -239,6 +255,14 @@ const Login = () => {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Processing...
+                    </span>
+                  ) : isRedirecting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Redirecting...
                     </span>
                   ) : (
                     isLogin ? 'Sign in' : 'Create account'

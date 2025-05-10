@@ -12,13 +12,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, theme } = useAuth();
   const navigate = useNavigate();
 
   const navLinks = [
     { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Dashboard", path: "/dashboard", icon: <BarChart3 className="w-5 h-5" /> },
     { name: "Population Simulation", path: "/simulation", icon: <Users className="w-5 h-5" /> },
+    { name: "Settings", path: "/settings", icon: <Settings className="w-5 h-5" /> },
     { name: "Admin Panel", path: "/admin", icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -27,7 +28,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
   };
 
   return (

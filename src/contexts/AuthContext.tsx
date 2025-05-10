@@ -9,6 +9,12 @@ interface User {
   name?: string;
 }
 
+interface ThresholdSettings {
+  pressure: number;
+  temperature: number;
+  flowRate: number;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -16,7 +22,18 @@ interface AuthContextType {
   logout: () => void;
   checkAuth: () => boolean;
   isLoading: boolean;
+  theme: string;
+  setTheme: (theme: string) => void;
+  thresholds: ThresholdSettings;
+  updateThresholds: (newThresholds: ThresholdSettings) => void;
 }
+
+// Default threshold values
+const DEFAULT_THRESHOLDS: ThresholdSettings = {
+  pressure: 200,
+  temperature: 80,
+  flowRate: 300
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,13 +41,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [theme, setThemeState] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [thresholds, setThresholds] = useState<ThresholdSettings>(() => {
+    const savedThresholds = localStorage.getItem('thresholds');
+    return savedThresholds ? JSON.parse(savedThresholds) : DEFAULT_THRESHOLDS;
+  });
   const navigate = useNavigate();
+
+  // Apply theme on mount and when theme changes
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Add subtle animation when switching themes
+    document.documentElement.classList.add('theme-transition');
+    setTimeout(() => {
+      document.documentElement.classList.remove('theme-transition');
+    }, 500);
+  }, [theme]);
 
   // Check if user is authenticated on mount
   useEffect(() => {
     checkAuth();
     setIsLoading(false);
   }, []);
+
+  // Save thresholds to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('thresholds', JSON.stringify(thresholds));
+  }, [thresholds]);
+
+  // Set theme function
+  const setTheme = (newTheme: string) => {
+    setThemeState(newTheme);
+  };
+
+  // Update thresholds function
+  const updateThresholds = (newThresholds: ThresholdSettings) => {
+    setThresholds(newThresholds);
+    // In a real app, we would also send this to the backend
+    toast({
+      title: "Settings Updated",
+      description: "Your threshold settings have been saved.",
+    });
+  };
 
   // Validate token and set auth state
   const checkAuth = (): boolean => {
@@ -41,7 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         // In a real app, you would verify the token with your backend
         // For now, we'll parse it to check if it's expired
-        const tokenData = JSON.parse(atob(token));
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
         
         if (tokenData.exp && tokenData.exp > Math.floor(Date.now() / 1000)) {
           setIsAuthenticated(true);
@@ -60,13 +114,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setIsAuthenticated(true);
-    setUser(userData);
-    toast({
-      title: "Login Successful",
-      description: `Welcome back, ${userData.name || userData.email}!`,
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // First store the token and user data
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Verify the token is valid
+        const isValid = checkAuth();
+        
+        if (isValid) {
+          setIsAuthenticated(true);
+          setUser(userData);
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${userData.name || userData.email}!`,
+          });
+          resolve();
+        } else {
+          reject(new Error('Token validation failed'));
+        }
+      } catch (error) {
+        reject(error);
+      }
     });
   };
 
@@ -83,7 +153,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, checkAuth, isLoading }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      user, 
+      login, 
+      logout, 
+      checkAuth, 
+      isLoading, 
+      theme, 
+      setTheme,
+      thresholds, 
+      updateThresholds 
+    }}>
       {children}
     </AuthContext.Provider>
   );

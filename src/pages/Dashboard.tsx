@@ -1,19 +1,25 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { TrendingUp, TrendingDown, Droplet, BarChart, Activity, Download, Filter, Calendar } from 'lucide-react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line } from 'recharts';
 import PipelineHealthMonitor from '../components/PipelineHealthMonitor';
 import PipelineVisualization3D from '../components/PipelineVisualization3D';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { thresholds } = useAuth();
   const [selectedTimeframe, setSelectedTimeframe] = useState('monthly');
+  
   // Real-time simulated data
   const [pressure, setPressure] = useState(120);
   const [temperature, setTemperature] = useState(65);
   const [flowRate, setFlowRate] = useState(250);
-  const [alertActive, setAlertActive] = useState(false);
+  const [alertActive, setAlertActive] = useState({
+    pressure: false,
+    temperature: false,
+    flowRate: false
+  });
 
   // Sample data for charts - this will be dynamically updated
   const [productionData, setProductionData] = useState([
@@ -47,6 +53,61 @@ const Dashboard = () => {
     { name: 'F6', value: 1100 }
   ]);
 
+  // Function to check for alerts based on thresholds
+  const checkForAlerts = useCallback((newPressure, newTemperature, newFlowRate) => {
+    const pressureCritical = newPressure > thresholds.pressure;
+    const temperatureCritical = newTemperature > thresholds.temperature;
+    const flowRateCritical = newFlowRate > thresholds.flowRate;
+    
+    // Check pressure
+    if (pressureCritical && !alertActive.pressure) {
+      toast({
+        title: "Alert: Critical Pressure",
+        description: `Pressure exceeding threshold: ${newPressure.toFixed(1)} PSI`,
+        variant: "destructive",
+      });
+      setAlertActive(prev => ({ ...prev, pressure: true }));
+    } else if (!pressureCritical && alertActive.pressure) {
+      toast({
+        title: "Alert Resolved: Pressure",
+        description: "Pressure has returned to normal levels",
+      });
+      setAlertActive(prev => ({ ...prev, pressure: false }));
+    }
+    
+    // Check temperature
+    if (temperatureCritical && !alertActive.temperature) {
+      toast({
+        title: "Alert: Critical Temperature",
+        description: `Temperature exceeding threshold: ${newTemperature.toFixed(1)}°C`,
+        variant: "destructive",
+      });
+      setAlertActive(prev => ({ ...prev, temperature: true }));
+    } else if (!temperatureCritical && alertActive.temperature) {
+      toast({
+        title: "Alert Resolved: Temperature",
+        description: "Temperature has returned to normal levels",
+      });
+      setAlertActive(prev => ({ ...prev, temperature: false }));
+    }
+    
+    // Check flow rate
+    if (flowRateCritical && !alertActive.flowRate) {
+      toast({
+        title: "Alert: Critical Flow Rate",
+        description: `Flow rate exceeding threshold: ${newFlowRate.toFixed(1)} L/min`,
+        variant: "destructive",
+      });
+      setAlertActive(prev => ({ ...prev, flowRate: true }));
+    } else if (!flowRateCritical && alertActive.flowRate) {
+      toast({
+        title: "Alert Resolved: Flow Rate",
+        description: "Flow rate has returned to normal levels",
+      });
+      setAlertActive(prev => ({ ...prev, flowRate: false }));
+    }
+  }, [thresholds, alertActive]);
+
   // Simulate real-time data changes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -60,19 +121,8 @@ const Dashboard = () => {
       setTemperature(newTemperature);
       setFlowRate(newFlowRate);
       
-      // Check if we need to show alerts
-      const criticalCondition = newPressure > 200 || newTemperature > 80;
-      
-      if (criticalCondition && !alertActive) {
-        toast({
-          title: "Alert: Critical System Values",
-          description: `${newPressure > 200 ? "Pressure exceeding safe levels. " : ""}${newTemperature > 80 ? "Temperature too high." : ""}`,
-          variant: "destructive"
-        });
-        setAlertActive(true);
-      } else if (!criticalCondition && alertActive) {
-        setAlertActive(false);
-      }
+      // Check for alerts
+      checkForAlerts(newPressure, newTemperature, newFlowRate);
       
       // Update chart data - add new point and remove oldest
       const timestamp = new Date().toLocaleTimeString();
@@ -93,19 +143,19 @@ const Dashboard = () => {
         return newData;
       });
       
-    }, 3000);
+    }, 2000); // Update every 2 seconds for more dynamic feel
     
     return () => clearInterval(interval);
-  }, [pressure, temperature, flowRate, alertActive]);
+  }, [pressure, temperature, flowRate, alertActive, checkForAlerts]);
 
   // Generate color based on value thresholds
   const getMetricColor = (value: number, type: 'pressure' | 'temperature' | 'flow') => {
     if (type === 'pressure') {
-      return value > 200 ? 'text-red-500' : value > 180 ? 'text-neon-orange' : 'text-neon-green';
+      return value > thresholds.pressure ? 'text-red-500' : value > thresholds.pressure * 0.9 ? 'text-neon-orange' : 'text-neon-green';
     } else if (type === 'temperature') {
-      return value > 80 ? 'text-red-500' : value > 70 ? 'text-neon-orange' : 'text-neon-green';
+      return value > thresholds.temperature ? 'text-red-500' : value > thresholds.temperature * 0.9 ? 'text-neon-orange' : 'text-neon-green';
     } else {
-      return value > 300 ? 'text-red-500' : value > 280 ? 'text-neon-orange' : 'text-neon-green';
+      return value > thresholds.flowRate ? 'text-red-500' : value > thresholds.flowRate * 0.9 ? 'text-neon-orange' : 'text-neon-green';
     }
   };
 
@@ -162,11 +212,16 @@ const Dashboard = () => {
                 <div className="h-2 bg-dark rounded-full overflow-hidden">
                   <div 
                     className={`h-full ${
-                      pressure > 200 ? 'bg-red-500' : 
-                      pressure > 180 ? 'bg-neon-orange' : 'bg-neon-green'
+                      pressure > thresholds.pressure ? 'bg-red-500' : 
+                      pressure > thresholds.pressure * 0.9 ? 'bg-neon-orange' : 'bg-neon-green'
                     }`}
                     style={{ width: `${(pressure / 250) * 100}%` }}
                   ></div>
+                </div>
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>0</span>
+                  <span>Threshold: {thresholds.pressure} PSI</span>
+                  <span>250</span>
                 </div>
               </div>
               
@@ -180,11 +235,16 @@ const Dashboard = () => {
                 <div className="h-2 bg-dark rounded-full overflow-hidden">
                   <div 
                     className={`h-full ${
-                      temperature > 80 ? 'bg-red-500' : 
-                      temperature > 70 ? 'bg-neon-orange' : 'bg-neon-green'
+                      temperature > thresholds.temperature ? 'bg-red-500' : 
+                      temperature > thresholds.temperature * 0.9 ? 'bg-neon-orange' : 'bg-neon-green'
                     }`}
                     style={{ width: `${(temperature / 100) * 100}%` }}
                   ></div>
+                </div>
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>0</span>
+                  <span>Threshold: {thresholds.temperature} °C</span>
+                  <span>100</span>
                 </div>
               </div>
               
@@ -198,23 +258,29 @@ const Dashboard = () => {
                 <div className="h-2 bg-dark rounded-full overflow-hidden">
                   <div 
                     className={`h-full ${
-                      flowRate > 300 ? 'bg-red-500' : 
-                      flowRate > 280 ? 'bg-neon-orange' : 'bg-neon-green'
+                      flowRate > thresholds.flowRate ? 'bg-red-500' : 
+                      flowRate > thresholds.flowRate * 0.9 ? 'bg-neon-orange' : 'bg-neon-green'
                     }`}
                     style={{ width: `${(flowRate / 350) * 100}%` }}
                   ></div>
                 </div>
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>0</span>
+                  <span>Threshold: {thresholds.flowRate} L/min</span>
+                  <span>350</span>
+                </div>
               </div>
               
-              {(pressure > 200 || temperature > 80) && (
+              {(pressure > thresholds.pressure || temperature > thresholds.temperature || flowRate > thresholds.flowRate) && (
                 <div className="bg-red-900/30 border border-red-500/30 p-4 rounded-md animate-pulse">
                   <p className="text-red-500 text-sm font-medium flex items-center">
                     <Activity className="h-4 w-4 mr-2" />
                     Critical condition detected
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {pressure > 200 && "Pressure exceeding safety threshold. "}
-                    {temperature > 80 && "Temperature too high."}
+                    {pressure > thresholds.pressure && `Pressure exceeding safety threshold (${Math.round(pressure)} PSI). `}
+                    {temperature > thresholds.temperature && `Temperature too high (${Math.round(temperature)} °C). `}
+                    {flowRate > thresholds.flowRate && `Flow rate beyond safe limits (${Math.round(flowRate)} L/min). `}
                   </p>
                 </div>
               )}
@@ -350,6 +416,7 @@ const Dashboard = () => {
                     contentStyle={{ backgroundColor: '#222', border: '1px solid #444' }} 
                     itemStyle={{ color: '#fff' }}
                     labelStyle={{ color: '#aaa' }}
+                    animationDuration={300}
                   />
                   <Area 
                     type="monotone" 
@@ -357,7 +424,9 @@ const Dashboard = () => {
                     stroke="#00FFFF" 
                     strokeWidth={2}
                     fillOpacity={1} 
-                    fill="url(#colorValue)" 
+                    fill="url(#colorValue)"
+                    isAnimationActive={true}
+                    animationDuration={500} 
                   />
                 </AreaChart>
               </ResponsiveContainer>

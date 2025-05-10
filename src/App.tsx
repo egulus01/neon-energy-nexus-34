@@ -10,9 +10,13 @@ import Index from "./pages/Index";
 import PublicDashboard from "./pages/PublicDashboard";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 import Simulation from "./pages/Simulation";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+
+// Theme transition styles
+import "./styles/theme-transition.css";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +33,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/simulation" element={<Simulation />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
