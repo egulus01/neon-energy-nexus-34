@@ -32,13 +32,13 @@ const PipelineSection = ({ position, rotation, scale, metrics }: {
   };
   
   useFrame(() => {
-    if (meshRef.current) {
+    if (meshRef.current && meshRef.current.material) {
       // Subtle animation effect
       meshRef.current.rotation.x += 0.001;
       
       // Update material color based on metrics
-      (meshRef.current.material as THREE.MeshStandardMaterial).color = 
-        new THREE.Color(getColor());
+      const material = meshRef.current.material as THREE.MeshStandardMaterial;
+      material.color.set(getColor());
     }
   });
 
@@ -53,7 +53,7 @@ const PipelineSection = ({ position, rotation, scale, metrics }: {
     >
       <cylinderGeometry args={[1, 1, 1, 32]} />
       <meshStandardMaterial 
-        color={getColor()}
+        color={new THREE.Color(getColor())}
         metalness={0.8}
         roughness={0.2}
         emissive={hovered ? new THREE.Color(getColor()).multiplyScalar(0.5) : undefined}
@@ -69,7 +69,7 @@ const PipelineJoint = ({ position }: { position: [number, number, number] }) => 
     <mesh position={position}>
       <sphereGeometry args={[1.2, 32, 32]} />
       <meshStandardMaterial 
-        color="#555555" 
+        color={new THREE.Color("#555555")}
         metalness={0.9}
         roughness={0.1}
       />
@@ -95,7 +95,7 @@ const PipelineValve = ({ position, rotation }: {
       <mesh>
         <boxGeometry args={[2.5, 2.5, 1.5]} />
         <meshStandardMaterial 
-          color="#444444" 
+          color={new THREE.Color("#444444")}
           metalness={0.9}
           roughness={0.2}
         />
@@ -104,7 +104,7 @@ const PipelineValve = ({ position, rotation }: {
         <mesh position={[0, 0, 1]}>
           <cylinderGeometry args={[0.2, 0.2, 2, 32]} />
           <meshStandardMaterial 
-            color="#666666" 
+            color={new THREE.Color("#666666")}
             metalness={0.9}
             roughness={0.2}
           />
@@ -112,7 +112,7 @@ const PipelineValve = ({ position, rotation }: {
         <mesh position={[0, 0, 2]} rotation={[Math.PI/2, 0, 0]}>
           <cylinderGeometry args={[0.4, 0.4, 1.5, 32]} />
           <meshStandardMaterial 
-            color="#888888" 
+            color={new THREE.Color("#888888")}
             metalness={0.9}
             roughness={0.2}
           />
@@ -134,10 +134,10 @@ const PipelineSensor = ({ position, label, value, critical }: {
       <mesh>
         <boxGeometry args={[1, 1, 0.5]} />
         <meshStandardMaterial 
-          color={critical ? "#FF4500" : "#00FFFF"} 
+          color={new THREE.Color(critical ? "#FF4500" : "#00FFFF")}
           metalness={0.5}
           roughness={0.5}
-          emissive={critical ? "#FF4500" : "#00FFFF"}
+          emissive={new THREE.Color(critical ? "#FF4500" : "#00FFFF")}
           emissiveIntensity={0.5}
         />
       </mesh>
