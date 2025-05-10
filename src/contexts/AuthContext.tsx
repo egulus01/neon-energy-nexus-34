@@ -93,14 +93,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (token && userData) {
       try {
-        // In a real app, you would verify the token with your backend
-        // For now, we'll parse it to check if it's expired
-        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        // For mock token validation, check if it at least looks like a JWT
+        // Real JWT validation would verify the signature with a secret key
+        const tokenParts = token.split('.');
         
-        if (tokenData.exp && tokenData.exp > Math.floor(Date.now() / 1000)) {
-          setIsAuthenticated(true);
-          setUser(JSON.parse(userData));
-          return true;
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid token format');
+        }
+        
+        // For our mock token, we'll still try to decode the payload
+        try {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            setIsAuthenticated(true);
+            setUser(JSON.parse(userData));
+            return true;
+          }
+        } catch (decodeError) {
+          console.error('Invalid token format', decodeError);
         }
       } catch (error) {
         console.error('Invalid token format', error);

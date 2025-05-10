@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
@@ -35,13 +36,19 @@ const Login = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // For demonstration purposes, we'll use a mock authentication
-      if (email === 'admin@example.com' && password === 'password') {
-        // Create a mock JWT token
-        const mockToken = btoa(JSON.stringify({
+      // Allow both "password" and "help" as valid passwords for the demo
+      if (email === 'admin@example.com' && (password === 'password' || password === 'help')) {
+        // Create a mock JWT token - encode it properly for base64
+        const tokenData = {
           id: '12345',
           email,
           exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiration
-        }));
+        };
+        
+        // Make sure the token is properly base64 encoded for JWT
+        const tokenString = JSON.stringify(tokenData);
+        const base64Token = btoa(tokenString);
+        const mockToken = `eyJhbGciOiJIUzI1NiJ9.${base64Token}.mockSignature`;
         
         setIsLoading(false);
         setIsRedirecting(true);
