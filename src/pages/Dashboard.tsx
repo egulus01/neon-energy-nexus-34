@@ -198,6 +198,7 @@ const Dashboard = () => {
                 pressure={pressure} 
                 temperature={temperature} 
                 flowRate={flowRate} 
+                thresholds={thresholds}
               />
             </div>
             

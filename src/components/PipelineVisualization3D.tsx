@@ -3,12 +3,16 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
-import { useAuth } from '../contexts/AuthContext';
 
 interface PipelineVisualizationProps {
   pressure: number;
   temperature: number;
   flowRate: number;
+  thresholds: {
+    pressure: number;
+    temperature: number;
+    flowRate: number;
+  };
 }
 
 // Pipeline section component that changes color based on metrics
@@ -27,19 +31,22 @@ const PipelineSection = ({ position, rotation, scale, metrics, thresholds }: {
   const [pulseDirection, setPulseDirection] = useState(1);
   const [isCritical, setIsCritical] = useState(false);
   
-  // Determine color based on metrics and configured thresholds
+  // Determine color based on metrics and configured thresholds - moved outside useFrame to prevent re-renders
   const getColor = () => {
     if (metrics.pressure > thresholds.pressure || metrics.temperature > thresholds.temperature) {
-      setIsCritical(true);
       return new THREE.Color('#FF4500'); // Red for critical
     } else if (metrics.pressure > thresholds.pressure * 0.75 || metrics.temperature > thresholds.temperature * 0.875) {
-      setIsCritical(false);
       return new THREE.Color('#FFA500'); // Orange/yellow for warning
     } else {
-      setIsCritical(false);
       return new THREE.Color('#39FF14'); // Green for normal
     }
   };
+
+  // Check for critical state only once per component update, not in render or useFrame
+  useEffect(() => {
+    const critical = metrics.pressure > thresholds.pressure || metrics.temperature > thresholds.temperature;
+    setIsCritical(critical);
+  }, [metrics.pressure, metrics.temperature, thresholds.pressure, thresholds.temperature]);
   
   useFrame(() => {
     if (meshRef.current && meshRef.current.material) {
@@ -52,17 +59,15 @@ const PipelineSection = ({ position, rotation, scale, metrics, thresholds }: {
       
       // Add pulsing effect for critical state
       if (isCritical) {
-        setPulseIntensity(prev => {
-          const newIntensity = prev + (0.05 * pulseDirection);
-          if (newIntensity > 1) {
-            setPulseDirection(-1);
-            return 1;
-          } else if (newIntensity < 0) {
-            setPulseDirection(1);
-            return 0;
-          }
-          return newIntensity;
-        });
+        const newIntensity = pulseIntensity + (0.05 * pulseDirection);
+        
+        if (newIntensity > 1) {
+          setPulseDirection(-1);
+        } else if (newIntensity < 0) {
+          setPulseDirection(1);
+        } else {
+          setPulseIntensity(newIntensity);
+        }
         
         material.emissiveIntensity = 0.3 + (pulseIntensity * 0.7);
         material.emissive = new THREE.Color('#FF4500');
@@ -225,9 +230,7 @@ const PipelineLabel = ({ position, label }: { position: [number, number, number]
 };
 
 // Main pipeline visualization component
-const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressure, temperature, flowRate }) => {
-  const { thresholds } = useAuth();
-  
+const PipelineVisualization3D: React.FC<PipelineVisualizationProps> = ({ pressure, temperature, flowRate, thresholds }) => {
   // Define if metrics are in critical state
   const isPressureCritical = pressure > thresholds.pressure;
   const isTemperatureCritical = temperature > thresholds.temperature;
