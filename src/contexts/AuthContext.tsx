@@ -53,11 +53,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
     
-    // Add subtle animation when switching themes
+    // Add transition class when switching themes
     document.documentElement.classList.add('theme-transition');
-    setTimeout(() => {
+    
+    // Also set a class on the body for broader theme support
+    if (theme === 'dark') {
+      document.body.classList.add('dark');
+      document.body.classList.remove('light');
+    } else {
+      document.body.classList.add('light');
+      document.body.classList.remove('dark');
+    }
+    
+    // Remove transition class after animation completes
+    const timer = setTimeout(() => {
       document.documentElement.classList.remove('theme-transition');
     }, 500);
+    
+    return () => clearTimeout(timer);
   }, [theme]);
 
   // Check if user is authenticated on mount
@@ -71,9 +84,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('thresholds', JSON.stringify(thresholds));
   }, [thresholds]);
 
-  // Set theme function
+  // Set theme function with improved validation
   const setTheme = (newTheme: string) => {
-    setThemeState(newTheme);
+    // Ensure only valid themes are set
+    if (newTheme === 'light' || newTheme === 'dark') {
+      setThemeState(newTheme);
+    } else {
+      console.warn(`Invalid theme: ${newTheme}. Using 'dark' as fallback.`);
+      setThemeState('dark');
+    }
   };
 
   // Update thresholds function
