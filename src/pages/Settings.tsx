@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun, Save, RefreshCw } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const Settings = () => {
   const { theme, setTheme, thresholds, updateThresholds } = useAuth();
@@ -16,10 +17,23 @@ const Settings = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
+  // Synchronize with thresholds from context when they change
+  useEffect(() => {
+    setLocalThresholds({
+      pressure: thresholds.pressure,
+      temperature: thresholds.temperature,
+      flowRate: thresholds.flowRate
+    });
+  }, [thresholds]);
+
   const handleThemeToggle = (checked: boolean) => {
     const newTheme = checked ? 'dark' : 'light';
     console.log('Toggling theme to:', newTheme); // Debug log
     setTheme(newTheme);
+    toast({
+      title: "Theme Updated",
+      description: `Application theme changed to ${newTheme} mode.`,
+    });
   };
 
   const handleThresholdChange = (value: number[], type: 'pressure' | 'temperature' | 'flowRate') => {
@@ -44,6 +58,10 @@ const Settings = () => {
       pressure: 200,
       temperature: 80,
       flowRate: 300
+    });
+    toast({
+      title: "Settings Reset",
+      description: "Threshold values have been reset to defaults.",
     });
   };
 

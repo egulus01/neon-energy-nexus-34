@@ -41,31 +41,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [theme, setThemeState] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setThemeState] = useState(() => {
+    // Get theme from localStorage or use system preference as fallback
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+      return savedTheme;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  
   const [thresholds, setThresholds] = useState<ThresholdSettings>(() => {
     const savedThresholds = localStorage.getItem('thresholds');
     return savedThresholds ? JSON.parse(savedThresholds) : DEFAULT_THRESHOLDS;
   });
   const navigate = useNavigate();
 
-  // Apply theme on mount and when theme changes
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
+  // Enhanced theme application
+  const applyTheme = (newTheme: string) => {
+    console.log('Applying theme:', newTheme); // Debug log
     
-    // Set the data-theme attribute on the html element
-    document.documentElement.setAttribute('data-theme', theme);
+    // Set data-theme attribute on the html element
+    document.documentElement.setAttribute('data-theme', newTheme);
     
     // Add transition class when switching themes
     document.documentElement.classList.add('theme-transition');
-    
-    // Also set a class on the body for broader theme support
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-      document.body.classList.remove('light');
-    } else {
-      document.body.classList.add('light');
-      document.body.classList.remove('dark');
-    }
     
     // Remove transition class after animation completes
     const timer = setTimeout(() => {
@@ -73,6 +72,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, 500);
     
     return () => clearTimeout(timer);
+  };
+
+  // Apply theme on mount and when theme changes
+  useEffect(() => {
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   // Check if user is authenticated on mount
