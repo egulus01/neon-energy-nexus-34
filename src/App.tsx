@@ -28,6 +28,11 @@ const queryClient = new QueryClient({
   },
 });
 
+// Apply initial theme class to HTML before React renders
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.documentElement.classList.add('theme-transition');
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

@@ -8,6 +8,8 @@
   transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
 }
 
+/* Root variables for light theme */
+:root,
 html[data-theme="light"] {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
@@ -42,10 +44,10 @@ html[data-theme="light"] {
   --neon-purple: 270 91% 65%;
   --neon-pink: 318 73% 55%;
   
-  background-color: #f5f5f7;
-  color: #1a1a1a;
+  color-scheme: light;
 }
 
+/* Dark theme variables */
 html[data-theme="dark"] {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
@@ -80,6 +82,16 @@ html[data-theme="dark"] {
   --neon-purple: 270 91% 65%;
   --neon-pink: 318 73% 55%;
   
+  color-scheme: dark;
+}
+
+/* Apply theme colors to body elements */
+html[data-theme="light"] body {
+  background-color: #f5f5f7;
+  color: #1a1a1a;
+}
+
+html[data-theme="dark"] body {
   background-color: #121212;
   color: #f5f5f5;
 }
@@ -91,4 +103,49 @@ html, body {
   padding: 0;
 }
 
-/* Remove redundant body classes - we'll rely on html[data-theme] only */
+/* Apply theme styles for specific components */
+html[data-theme="light"] .glass-panel {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(240, 240, 245, 0.5);
+}
+
+html[data-theme="dark"] .glass-panel {
+  background-color: rgba(30, 30, 40, 0.8);
+  border: 1px solid rgba(50, 50, 60, 0.5);
+}
+
+/* Override for elements that don't inherit theme properly */
+html[data-theme="light"] .bg-dark {
+  background-color: #f8f8fa;
+}
+
+html[data-theme="light"] .bg-dark-lighter {
+  background-color: #ffffff;
+}
+
+html[data-theme="light"] .bg-dark-accent {
+  background-color: #f0f0f5;
+}
+
+html[data-theme="light"] .bg-dark-card {
+  background-color: #ffffff;
+}
+
+html[data-theme="light"] .text-white,
+html[data-theme="light"] .text-gray-300,
+html[data-theme="light"] .text-gray-400 {
+  color: #333333;
+}
+
+html[data-theme="light"] .border-dark-accent {
+  border-color: #e0e0e5;
+}
+
+/* Ensure text in light theme has proper contrast */
+html[data-theme="light"] .sidebar-link {
+  color: #333333;
+}
+
+html[data-theme="light"] .sidebar-link.active {
+  background-color: #e0e0e5;
+}

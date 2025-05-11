@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown, Home, BarChart3, Users, Settings, LogOut } from "lucide-react";
@@ -43,7 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Link to="/" className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-neon-blue to-neon-purple"></div>
               <span className="text-lg font-display font-bold tracking-wider text-white">
-                69-BH12-NER
+                Nirmaan
               </span>
             </Link>
             <button 

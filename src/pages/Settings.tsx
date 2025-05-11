@@ -29,11 +29,28 @@ const Settings = () => {
   const handleThemeToggle = (checked: boolean) => {
     const newTheme = checked ? 'dark' : 'light';
     console.log('Toggling theme to:', newTheme); // Debug log
+    
+    // Apply theme transition class
+    document.documentElement.classList.add('theme-transition');
+    
+    // Set the theme
     setTheme(newTheme);
+    
+    // Persist to localStorage directly as well for redundancy
+    localStorage.setItem('theme', newTheme);
+    
+    // Ensure the data-theme attribute is set on the html element
+    document.documentElement.setAttribute('data-theme', newTheme);
+    
     toast({
       title: "Theme Updated",
       description: `Application theme changed to ${newTheme} mode.`,
     });
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+      document.documentElement.classList.remove('theme-transition');
+    }, 500);
   };
 
   const handleThresholdChange = (value: number[], type: 'pressure' | 'temperature' | 'flowRate') => {
@@ -84,12 +101,12 @@ const Settings = () => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Sun className="h-5 w-5 text-gray-400" />
+              <Sun className={`h-5 w-5 ${theme === 'light' ? 'text-neon-orange' : 'text-gray-400'}`} />
               <Switch 
                 checked={theme === 'dark'}
                 onCheckedChange={handleThemeToggle}
               />
-              <Moon className="h-5 w-5 text-neon-blue" />
+              <Moon className={`h-5 w-5 ${theme === 'dark' ? 'text-neon-blue' : 'text-gray-400'}`} />
             </div>
           </div>
         </div>
