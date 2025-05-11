@@ -17,7 +17,9 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleThemeToggle = (checked: boolean) => {
-    setTheme(checked ? 'dark' : 'light');
+    const newTheme = checked ? 'dark' : 'light';
+    console.log('Toggling theme to:', newTheme); // Debug log
+    setTheme(newTheme);
   };
 
   const handleThresholdChange = (value: number[], type: 'pressure' | 'temperature' | 'flowRate') => {

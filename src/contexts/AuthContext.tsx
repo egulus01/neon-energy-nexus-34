@@ -51,6 +51,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Apply theme on mount and when theme changes
   useEffect(() => {
     localStorage.setItem('theme', theme);
+    
+    // Set the data-theme attribute on the html element
     document.documentElement.setAttribute('data-theme', theme);
     
     // Add transition class when switching themes
@@ -86,6 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Set theme function with improved validation
   const setTheme = (newTheme: string) => {
+    console.log('Setting theme to:', newTheme); // Debug log
     // Ensure only valid themes are set
     if (newTheme === 'light' || newTheme === 'dark') {
       setThemeState(newTheme);
